@@ -12,20 +12,20 @@ db = SQLAlchemy(model_class=Base)
 class Author(db.Model):
     id: db.Mapped[int] = db.mapped_column(primary_key=True, autoincrement=True)
     name: db.Mapped[str] = db.mapped_column(nullable=False)
-    birth_date: db.Mapped[str] = db.mapped_column()
+    birth_date: db.Mapped[str] = db.mapped_column(nullable=False)
     death_date: db.Mapped[str] = db.mapped_column()
+    books = db.relationship('Book', backref='author', lazy=True)
 
     def __repr__(self):
         return f"Author(id = {self.id}, name = {self.name}"
 
     def __str__(self):
-        birth = self.birth_date if self.birth_date else ""
         death = self.death_date if self.death_date else ""
 
-        if birth or death:
-            return f"{self.id}. {self.name} ({birth} - {death})".strip(" -")
+        if death:
+            return f"{self.id}. {self.name} ({self.birth_date} - {death})"
         else:
-            return f"{self.id}. {self.name}"
+            return f"{self.id}. {self.name} ({self.birth_date})"
 
 
 class Book(db.Model):
