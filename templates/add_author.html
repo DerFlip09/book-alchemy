@@ -6,6 +6,9 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
   </head>
   <body>
+  {% if request.args.get('success') == 'True' %}
+  <p style="color: green" class="alert alert-success">Author was successfully added</p>
+  {% endif %}
 
   <form action="/add_author" method="POST">
   <label for="name">Author Name:</label>
@@ -15,7 +18,8 @@
   <label for="death_date">Date of Death:</label>
   <input type="date" id="death_date" name="death_date"><br><br>
   <input type="submit" value="Add Author">
-  </form>
+  </form><br>
+  <a href="{{ url_for('home') }}">Back to Overview</a>
 
   </body>
 </html>

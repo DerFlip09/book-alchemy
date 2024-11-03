@@ -6,6 +6,9 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
   </head>
   <body>
+    {% if request.args.get('success') == 'True' %}
+    <p style="color: green" class="alert alert-success">Book was successfully added</p>
+    {% endif %}
 
   <form action="/add_book" method="POST">
     <label for="title">Title:</label>
@@ -22,7 +25,7 @@
     <label for="isbn">ISBN:</label>
     <input type="number" id="isbn" name="isbn"><br><br>
     <input type="submit" value="Add Book">
-  </form>
-
+  </form><br>
+  <a href="{{ url_for('home') }}">Back to Overview</a>
   </body>
 </html>

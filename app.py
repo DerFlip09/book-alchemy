@@ -21,8 +21,23 @@ db.init_app(app)
 
 @app.route('/', methods=['GET'])
 def home():
-    books = Book.query.all()
-    return render_template('home.html', books=books)
+    sort_by = request.args.get('sort_by', 'title')
+    search = request.args.get('search')
+
+    if search:
+        books = Book.query.order_by(Book.title) \
+                .filter(Book.title.like(f'%{search}%')).all()
+        if books:
+            return render_template('home.html', books=books, success=True)
+        return render_template('home.html', success=False)
+    if sort_by == 'title':
+        books = Book.query.order_by(Book.title).all()
+    elif sort_by == 'author':
+        books = Book.query.join(Author).order_by(Author.name).all()
+    elif sort_by == 'publication_year':
+        books = Book.query.order_by(Book.publication_year).all()
+
+    return render_template('home.html', books=books, success=True)
 
 
 @app.route('/add_author', methods=['GET', 'POST'])
@@ -34,7 +49,7 @@ def add_author():
         author = Author(name=author_name, birth_date=birth_date, death_date=death_date)
         db.session.add(author)
         db.session.commit()
-        return redirect('/add_author', 302)
+        return redirect(url_for('add_author', success=True), 302)
     return render_template('add_author.html')
 
 
@@ -48,9 +63,17 @@ def add_book():
         book = Book(title=title, author_id=author_id, publication_year=publication_year, isbn=isbn)
         db.session.add(book)
         db.session.commit()
-        return redirect('/add_book', 302)
+        return redirect(url_for('add_book', success=True), 302)
     authors = Author.query.all()
     return render_template('add_book.html', authors=authors)
+
+
+@app.route('/book/<int:book_id>/delete', methods=['POST'])
+def delete_book(book_id):
+    book = Book.query.get(book_id)
+    db.session.delete(book)
+    db.session.commit()
+    return redirect(url_for('home', success_delete=True), 302)
 
 
 if __name__ == '__main__':
