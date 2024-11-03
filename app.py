@@ -7,10 +7,12 @@ app = Flask(__name__)
 # Get the absolute path to the current directory
 base_dir = os.path.abspath(os.path.dirname(__file__))
 
+# Configure the database URI and tracking modifications
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(base_dir, "data", "library.sqlite3")}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
+
 
 # Create the tables
 # with app.app_context():
@@ -18,30 +20,47 @@ db.init_app(app)
 #     db.create_all()  # Create all tables based on the defined models
 #     print("Tables created.")
 
-
 @app.route('/', methods=['GET'])
 def home():
+    """Render the home page with a list of books.
+
+    Retrieves books from the database, allowing for sorting and searching.
+
+    Returns:
+        Rendered HTML page of the home view with books.
+    """
     sort_by = request.args.get('sort_by', 'title')
     search = request.args.get('search')
 
+    # Search functionality
     if search:
-        books = Book.query.order_by(Book.title) \
-                .filter(Book.title.like(f'%{search}%')).all()
-        if books:
-            return render_template('home.html', books=books, success=True)
-        return render_template('home.html', success=False)
+        books = Book.query.filter(Book.title.like(f'%{search}%')).order_by(Book.title).all()
+        return render_template('home.html', books=books, success=bool(books))
+
+    # Sorting functionality
     if sort_by == 'title':
         books = Book.query.order_by(Book.title).all()
     elif sort_by == 'author':
         books = Book.query.join(Author).order_by(Author.name).all()
     elif sort_by == 'publication_year':
         books = Book.query.order_by(Book.publication_year).all()
+    else:
+        books = Book.query.all()  # Default case if no valid sort_by
 
     return render_template('home.html', books=books, success=True)
 
 
 @app.route('/add_author', methods=['GET', 'POST'])
 def add_author():
+    """Add a new author to the database.
+
+    Handles both GET and POST requests. On a POST request, it retrieves
+    author details from the form and adds the author to the database.
+
+    Returns:
+        Redirects to the same page with a success flag if the author is added.
+        Renders the add author form on a GET request.
+    """
     if request.method == 'POST':
         author_name = request.form.get('name').strip()
         birth_date = request.form.get('birth_date').strip()
@@ -55,6 +74,15 @@ def add_author():
 
 @app.route('/add_book', methods=['GET', 'POST'])
 def add_book():
+    """Add a new book to the database.
+
+    Handles both GET and POST requests. On a POST request, it retrieves
+    book details from the form and adds the book to the database.
+
+    Returns:
+        Redirects to the same page with a success flag if the book is added.
+        Renders the add book form along with a list of authors on a GET request.
+    """
     if request.method == 'POST':
         title = request.form.get('title').strip()
         author_id = request.form.get('author_id').strip()
@@ -64,15 +92,27 @@ def add_book():
         db.session.add(book)
         db.session.commit()
         return redirect(url_for('add_book', success=True), 302)
+
     authors = Author.query.all()
     return render_template('add_book.html', authors=authors)
 
 
 @app.route('/book/<int:book_id>/delete', methods=['POST'])
 def delete_book(book_id):
+    """Delete a book from the database.
+
+    Deletes a book identified by the book_id parameter.
+
+    Args:
+        book_id (int): The ID of the book to be deleted.
+
+    Returns:
+        Redirects to the home page after the book is deleted.
+    """
     book = Book.query.get(book_id)
-    db.session.delete(book)
-    db.session.commit()
+    if book:  # Ensure the book exists before attempting to delete
+        db.session.delete(book)
+        db.session.commit()
     return redirect(url_for('home', success_delete=True), 302)
 
 
